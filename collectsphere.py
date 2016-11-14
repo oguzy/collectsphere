@@ -128,8 +128,11 @@ def read_callback():
         env = ENVIRONMENT[name]
         collectd.info("read_callback: entering environment: " + name)
 
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+
         # Connects to vCenter Server
-        serviceInstance = SmartConnect(host = env["host"], user = env["username"], pwd = env["password"])
+        serviceInstance = SmartConnect(host = env["host"], user = env["username"], pwd = env["password"], sslContext=context)
         performanceManager = serviceInstance.RetrieveServiceContent().perfManager
 
         # Walk through all Clusters of Datacenter
@@ -327,9 +330,11 @@ def create_environment(config):
             'vm_counter_ids': [<ID>, <ID>, ...],
         }
     """
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context.verify_mode = ssl.CERT_NONE
 
     # Connect to vCenter Server
-    serviceInstance = SmartConnect(host = config.get("host"), user = config.get("username"), pwd = config.get("password"))
+    serviceInstance = SmartConnect(host = config.get("host"), user = config.get("username"), pwd = config.get("password"), sslContext=context)
 
     # If we could not connect abort here
     if not serviceInstance:
@@ -360,6 +365,8 @@ def create_environment(config):
     for child in serviceInstance.RetrieveServiceContent().rootFolder.childEntity:
         if child._wsdlName == "Datacenter":
             for hostFolderChild in child.hostFolder.childEntity:
+                if hostFolderChild._wsdlName == "Folder":
+                    continue
                 host = hostFolderChild.host[0] if ((len(hostFolderChild.host) != 0) and hostFolderChild.host[0].summary.runtime.powerState == vim.HostSystem.PowerState.poweredOn) else host
                 if (vm != None and host != None):
                     break
