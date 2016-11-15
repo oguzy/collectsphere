@@ -132,7 +132,12 @@ def read_callback():
         context.verify_mode = ssl.CERT_NONE
 
         # Connects to vCenter Server
-        serviceInstance = SmartConnect(host = env["host"], user = env["username"], pwd = env["password"], sslContext=context)
+        try:
+            serviceInstance = SmartConnect(host = env["host"], user = env["username"], pwd = env["password"], sslContext=context)
+        except TypeError:
+            ssl._create_default_https_context = ssl._create_unverified_context
+            serviceInstance = SmartConnect(host=env["host"], user=env["username"], pwd=env["password"])
+
         performanceManager = serviceInstance.RetrieveServiceContent().perfManager
 
         # Walk through all Clusters of Datacenter
@@ -334,7 +339,12 @@ def create_environment(config):
     context.verify_mode = ssl.CERT_NONE
 
     # Connect to vCenter Server
-    serviceInstance = SmartConnect(host = config.get("host"), user = config.get("username"), pwd = config.get("password"), sslContext=context)
+    try:
+        serviceInstance = SmartConnect(host = config.get("host"), user = config.get("username"), pwd = config.get("password"), sslContext=context)
+    except TypeError:
+        ssl._create_default_https_context = ssl._create_unverified_context
+        serviceInstance = SmartConnect(host=config.get("host"), user=config.get("username"), pwd=config.get("password"))
+
 
     # If we could not connect abort here
     if not serviceInstance:
